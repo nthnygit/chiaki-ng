@@ -1044,8 +1044,8 @@ void StreamSession::HandleMouseLookButton(QMouseEvent *event, bool pressed)
 	{
 		case Qt::LeftButton:
 		{
-			// Normal: Angriff (Quadrat). Im Cursor-Modus: Klick auf Menuepunkt (Kreuz).
-			const int btn = cursor_mode ? CHIAKI_CONTROLLER_BUTTON_CROSS : CHIAKI_CONTROLLER_BUTTON_BOX;
+			// Normal: Angriff (Quadrat). Solange Alt gehalten ist (Cursor/Menue, auch PlayStation-Menue): Kreuz.
+			const int btn = (cursor_want || cursor_mode) ? CHIAKI_CONTROLLER_BUTTON_CROSS : CHIAKI_CONTROLLER_BUTTON_BOX;
 			if (pressed)
 				keyboard_state.buttons |= btn;
 			else
