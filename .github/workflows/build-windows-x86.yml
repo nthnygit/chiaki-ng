@@ -164,7 +164,10 @@ jobs:
 
       - name: Prepare Qt deployment package
         run: |
+          # Newer vcpkg names some DLLs differently: copy all of them, tolerate single missing files.
+          $ErrorActionPreference = 'Continue'
           mkdir chiaki-ng-Win
+          cp "${env:VCPKG_INSTALLED_DIR}\${{ env.triplet }}\bin\*.dll" chiaki-ng-Win
           cp build\gui\chiaki.exe chiaki-ng-Win
           cp build\third-party\cpp-steam-tools\cpp-steam-tools.dll chiaki-ng-Win
           cp scripts\qtwebengine_import.qml gui\src\qml\
