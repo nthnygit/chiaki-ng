@@ -1100,7 +1100,8 @@ void StreamSession::HandleKeyboardEvent(QKeyEvent *event)
 		switch(pressed_key)
 		{
 			case Qt::Key_Y:      button = CHIAKI_CONTROLLER_BUTTON_PYRAMID; break; // Chain Ultimate (Dreieck)
-			case Qt::Key_T:      button = CHIAKI_CONTROLLER_BUTTON_BOX;     break; // Mobility (Quadrat)
+			case Qt::Key_T:      button = CHIAKI_CONTROLLER_BUTTON_BOX | CHIAKI_CONTROLLER_BUTTON_CROSS; break; // Ability/Mobility (Quadrat + Kreuz)
+			case Qt::Key_R:      button = CHIAKI_CONTROLLER_BUTTON_L1 | CHIAKI_CONTROLLER_BUTTON_R1;     break; // Ultimate (L1 + R1)
 			case Qt::Key_Return:
 			case Qt::Key_Enter:  button = CHIAKI_CONTROLLER_BUTTON_CROSS;   break; // Bestaetigen (Kreuz)
 			case Qt::Key_N:      button = CHIAKI_CONTROLLER_BUTTON_MOON;    break; // Pop-up schliessen (Kreis)
