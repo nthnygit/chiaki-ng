@@ -446,6 +446,7 @@ class Settings : public QObject
 		bool GetMouseStickEnabled() const;
 		void SetMouseStickEnabled(bool enabled);
 		float GetMouseStickSensitivity() const;
+		void SetMouseStickSensitivity(float sensitivity);
 
 		bool GetDpadTouchEnabled() const;
 		void SetDpadTouchEnabled(bool enabled);

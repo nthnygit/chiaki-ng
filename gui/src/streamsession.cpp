@@ -950,8 +950,9 @@ void StreamSession::HandleMouseLookButton(QMouseEvent *event, bool pressed)
 {
 	switch (event->button())
 	{
-		case Qt::LeftButton:
-			keyboard_state.r2_state = pressed ? 0xff : 0;
+		case Qt::LeftButton: // Attack (Aniimo: Square / X)
+			if (pressed) keyboard_state.buttons |= CHIAKI_CONTROLLER_BUTTON_BOX;
+			else keyboard_state.buttons &= ~CHIAKI_CONTROLLER_BUTTON_BOX;
 			break;
 		case Qt::RightButton:
 			keyboard_state.l2_state = pressed ? 0xff : 0;

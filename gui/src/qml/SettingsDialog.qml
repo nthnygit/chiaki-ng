@@ -2347,11 +2347,30 @@ DialogView {
                             }
                         }
                         CheckBox {
-                            text: qsTr("Mouse controls right stick (L=R2, R=L2, Middle=R3)")
+                            text: qsTr("Mouse controls right stick (Left=Square, Right=L2, Middle=R3)")
                             checked: Chiaki.settings.mouseStickEnabled
                             onToggled: Chiaki.settings.mouseStickEnabled = checked
                             Layout.alignment: Qt.AlignRight
                             Material.roundedScale: Material.SmallScale
+                        }
+                        RowLayout {
+                            Layout.columnSpan: 3
+                            Layout.alignment: Qt.AlignRight
+                            Label {
+                                text: qsTr("Mouse stick sensitivity:")
+                            }
+                            C.Slider {
+                                id: mouseStickSensitivitySlider
+                                Layout.preferredWidth: 200
+                                from: 0.5
+                                to: 6.0
+                                stepSize: 0.1
+                                value: Chiaki.settings.mouseStickSensitivity
+                                onMoved: Chiaki.settings.mouseStickSensitivity = value
+                            }
+                            Label {
+                                text: mouseStickSensitivitySlider.value.toFixed(1)
+                            }
                         }
                         CheckBox {
                             text: qsTr("Enable Mouse Touchpad")
