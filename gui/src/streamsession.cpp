@@ -1090,13 +1090,29 @@ void StreamSession::HandleKeyboardEvent(QKeyEvent *event)
 	}
 	if(!keyboard_controller_enabled)
 		return;
-	if(key_map.contains(Qt::Key(event->key())) == false)
+	const Qt::Key pressed_key = Qt::Key(event->key());
+	int button = 0;
+	if(key_map.contains(pressed_key))
+		button = key_map[pressed_key];
+	else if(mouse_stick_enabled)
+	{
+		// Zusatz-Tasten, die am PC dieselbe Aktion wie ein Controller-Button ausloesen (Aniimo)
+		switch(pressed_key)
+		{
+			case Qt::Key_Y:      button = CHIAKI_CONTROLLER_BUTTON_PYRAMID; break; // Chain Ultimate (Dreieck)
+			case Qt::Key_T:      button = CHIAKI_CONTROLLER_BUTTON_BOX;     break; // Mobility (Quadrat)
+			case Qt::Key_Return:
+			case Qt::Key_Enter:  button = CHIAKI_CONTROLLER_BUTTON_CROSS;   break; // Bestaetigen (Kreuz)
+			case Qt::Key_N:      button = CHIAKI_CONTROLLER_BUTTON_MOON;    break; // Pop-up schliessen (Kreis)
+			default: return;
+		}
+	}
+	else
 		return;
 
 	if(event->isAutoRepeat())
 		return;
 
-	int button = key_map[Qt::Key(event->key())];
 	bool press_event = event->type() == QEvent::Type::KeyPress;
 
 	switch(button)
