@@ -7764,6 +7764,11 @@ bool QmlMainWindow::event(QEvent *event)
         }
         QGuiApplication::sendEvent(quick_window, event);
         break;
+    case QEvent::WindowDeactivate:
+        // Fenster verliert den Fokus (z. B. Alt+Tab): Cursor-Wunsch zuruecknehmen, damit nichts haengen bleibt
+        if (session && session->MouseStickEnabled())
+            session->SetCursorModeWanted(false);
+        break;
     case QEvent::TouchBegin:
     case QEvent::TouchUpdate:
     case QEvent::TouchEnd:

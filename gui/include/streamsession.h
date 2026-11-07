@@ -245,7 +245,8 @@ class StreamSession : public QObject
 		void BuildKeyHelp();
 		bool cursor_mode = false;
 		bool cursor_toggle_busy = false;
-		void ToggleCursorMode();
+		bool cursor_want = false;
+		void ApplyCursorMode();
 		void MouseLookTick();
 		void HandleMouseLookButton(QMouseEvent *event, bool pressed);
 		bool dpad_regular;
@@ -395,6 +396,7 @@ class StreamSession : public QObject
 		void HandleMouseMoveEvent(QMouseEvent *event, qreal width, qreal height);
 		bool MouseStickEnabled() const { return mouse_stick_enabled; }
 		void HandleMouseLookDelta(double dx, double dy);
+		void SetCursorModeWanted(bool want);
 #if CHIAKI_GUI_ENABLE_SPEEX
 		bool ProcessMicFrame(int16_t *echo_buf);
 #endif

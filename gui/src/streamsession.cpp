@@ -989,40 +989,52 @@ void StreamSession::BuildKeyHelp()
 	l << QStringLiteral("Combat mode: J   Switch Aniipod: Ctrl");
 	l << QStringLiteral("Lock On: %1   Track: %2")
 			.arg(key_for(CHIAKI_CONTROLLER_BUTTON_R3), key_for(CHIAKI_CONTROLLER_BUTTON_L3));
-	l << QStringLiteral("Cursor mode: Alt / Middle click (Left click = confirm)");
+	l << QStringLiteral("Cursor: hold Alt (Left click = Cross)");
 	l << QStringLiteral("Menu: %1   Confirm: Enter   Back: N").arg(key_for(CHIAKI_CONTROLLER_BUTTON_OPTIONS));
 	l << QStringLiteral("F1: show / hide this help");
 	key_help = l.join(QLatin1Char('\n'));
 }
 
-void StreamSession::ToggleCursorMode()
+void StreamSession::SetCursorModeWanted(bool want)
 {
-	if (cursor_toggle_busy)
+	// Alt gehalten = Cursor erwuenscht, Alt losgelassen = Cursor weg
+	cursor_want = want;
+	ApplyCursorMode();
+}
+
+void StreamSession::ApplyCursorMode()
+{
+	// Das Spiel schaltet den Cursor um, wenn R3 lange gehalten wird. Waehrend das laeuft,
+	// werden weitere Wuensche gemerkt und danach nachgezogen.
+	if (cursor_toggle_busy || cursor_mode == cursor_want)
 		return;
-	// Maus-Anteil auf dem bisherigen Stick loeschen und Glaettung zuruecksetzen
-	if (cursor_mode)
-	{
-		keyboard_state.left_x = 0;
-		keyboard_state.left_y = 0;
-	}
-	else
-	{
-		keyboard_state.right_x = 0;
-		keyboard_state.right_y = 0;
-	}
-	mouse_out_x = mouse_out_y = 0;
-	mouse_smooth_x = mouse_smooth_y = 0.0f;
-	mouse_acc_x = mouse_acc_y = 0.0;
-	cursor_mode = !cursor_mode;
-	emit CursorModeChanged();
-	// Das Spiel schaltet den Cursor um, wenn R3 gehalten wird: R3 selbst lange halten
 	cursor_toggle_busy = true;
 	keyboard_state.buttons |= CHIAKI_CONTROLLER_BUTTON_R3;
 	SendFeedbackState();
+	// Nach kurzer Zeit hat das Spiel umgeschaltet: Maus-Zuordnung (Kamera <-> Cursor) wechseln
+	QTimer::singleShot(700, this, [this]() {
+		if (cursor_mode)
+		{
+			keyboard_state.left_x = 0;
+			keyboard_state.left_y = 0;
+		}
+		else
+		{
+			keyboard_state.right_x = 0;
+			keyboard_state.right_y = 0;
+		}
+		mouse_out_x = mouse_out_y = 0;
+		mouse_smooth_x = mouse_smooth_y = 0.0f;
+		mouse_acc_x = mouse_acc_y = 0.0;
+		cursor_mode = !cursor_mode;
+		emit CursorModeChanged();
+		SendFeedbackState();
+	});
 	QTimer::singleShot(1500, this, [this]() {
 		keyboard_state.buttons &= ~CHIAKI_CONTROLLER_BUTTON_R3;
 		cursor_toggle_busy = false;
 		SendFeedbackState();
+		ApplyCursorMode(); // falls Alt inzwischen anders steht
 	});
 }
 
@@ -1046,7 +1058,7 @@ void StreamSession::HandleMouseLookButton(QMouseEvent *event, bool pressed)
 		case Qt::MiddleButton:
 			// Mausrad-Klick schaltet den Cursor-Modus um (haelt R3 selbst lange gedrueckt)
 			if (pressed)
-				ToggleCursorMode();
+				SetCursorModeWanted(!cursor_want);
 			return;
 		case Qt::BackButton:
 			if (pressed) keyboard_state.buttons |= CHIAKI_CONTROLLER_BUTTON_L1;
@@ -1131,11 +1143,11 @@ void StreamSession::HandleKeyboardEvent(QKeyEvent *event)
 		}
 		return;
 	}
-	// Alt schaltet den Cursor-Modus um (wie Alt am PC), nur im Maus-Look-Modus
+	// Alt gedrueckt = Cursor sichtbar, Alt losgelassen = Cursor weg (wie am PC), nur im Maus-Look-Modus
 	if(mouse_stick_enabled && event->key() == Qt::Key_Alt)
 	{
-		if(event->type() == QEvent::Type::KeyPress && !event->isAutoRepeat())
-			ToggleCursorMode();
+		if(!event->isAutoRepeat())
+			SetCursorModeWanted(event->type() == QEvent::Type::KeyPress);
 		return;
 	}
 	if(!keyboard_controller_enabled)
