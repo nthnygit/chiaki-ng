@@ -1,4 +1,5 @@
 #include "qmlmainwindow.h"
+#include <QCursor>
 #include "qmlbackend.h"
 #include "qmlsvgprovider.h"
 #include "chiaki/log.h"
@@ -7710,7 +7711,19 @@ bool QmlMainWindow::event(QEvent *event)
         if (static_cast<QMouseEvent*>(event)->source() != Qt::MouseEventNotSynthesized)
             return true;
         if (session && !grab_input) {
-            if (event->type() == QEvent::MouseMove)
+            if (event->type() == QEvent::MouseMove && session->MouseStickEnabled()) {
+                // Maus-Look: Abstand zur Fenstermitte als Stick-Eingabe, Cursor wieder zentrieren
+                if (isActive()) {
+                    const QPointF center(width() / 2.0, height() / 2.0);
+                    const QPointF delta = static_cast<QMouseEvent*>(event)->scenePosition() - center;
+                    if (!qFuzzyIsNull(delta.x()) || !qFuzzyIsNull(delta.y())) {
+                        session->HandleMouseLookDelta(delta.x(), delta.y());
+                        QCursor::setPos(mapToGlobal(center.toPoint()));
+                    }
+                    setCursor(Qt::BlankCursor);
+                }
+            }
+            else if (event->type() == QEvent::MouseMove)
                 session->HandleMouseMoveEvent(static_cast<QMouseEvent*>(event), width(), height());
             else if (event->type() == QEvent::MouseButtonPress)
                 session->HandleMousePressEvent(static_cast<QMouseEvent*>(event));

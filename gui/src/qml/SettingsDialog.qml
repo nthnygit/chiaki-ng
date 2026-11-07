@@ -2347,6 +2347,13 @@ DialogView {
                             }
                         }
                         CheckBox {
+                            text: qsTr("Mouse controls right stick (L=R2, R=L2, Middle=R3)")
+                            checked: Chiaki.settings.mouseStickEnabled
+                            onToggled: Chiaki.settings.mouseStickEnabled = checked
+                            Layout.alignment: Qt.AlignRight
+                            Material.roundedScale: Material.SmallScale
+                        }
+                        CheckBox {
                             text: qsTr("Enable Mouse Touchpad")
                             checked: {
                                 Chiaki.settings.mouseTouchEnabled

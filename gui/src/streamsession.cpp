@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LicenseRef-AGPL-3.0-only-OpenSSL
 
 #include <streamsession.h>
+#include <cmath>
+#include <algorithm>
 #include <settings.h>
 #include <controllermanager.h>
 
@@ -303,6 +305,8 @@ StreamSessionConnectInfo::StreamSessionConnectInfo(
 	const bool keyboard_controller_enabled_setting = settings->GetKeyboardEnabled();
 	this->keyboard_controller_enabled = keyboard_controller_enabled_setting;
 	this->mouse_touch_enabled = settings->GetMouseTouchEnabled();
+	this->mouse_stick_enabled = settings->GetMouseStickEnabled();
+	this->mouse_stick_sensitivity = settings->GetMouseStickSensitivity();
 	this->enable_keyboard = false;
 	this->enable_dualsense = true;
 	this->enable_idr_on_fec_failure = settings->GetIDROnFECFailureEnabled();
@@ -462,6 +466,16 @@ StreamSession::StreamSession(const StreamSessionConnectInfo &connect_info, QObje
 #endif
 	audio_buffer_size = connect_info.audio_buffer_size;
 	mouse_touch_enabled = connect_info.mouse_touch_enabled;
+	mouse_stick_enabled = connect_info.mouse_stick_enabled;
+	mouse_stick_sensitivity = connect_info.mouse_stick_sensitivity;
+	if (mouse_stick_enabled)
+	{
+		mouse_look_timer = new QTimer(this);
+		mouse_look_timer->setTimerType(Qt::PreciseTimer);
+		mouse_look_timer->setInterval(4);
+		connect(mouse_look_timer, &QTimer::timeout, this, &StreamSession::MouseLookTick);
+		mouse_look_timer->start();
+	}
 	keyboard_controller_enabled = connect_info.keyboard_controller_enabled;
 	host = connect_info.host;
 	QByteArray host_str = connect_info.host.toUtf8();
@@ -898,8 +912,75 @@ void StreamSession::GoHome()
 	chiaki_session_go_home(&session);
 }
 
+void StreamSession::HandleMouseLookDelta(double dx, double dy)
+{
+	mouse_acc_x += dx;
+	mouse_acc_y += dy;
+}
+
+void StreamSession::MouseLookTick()
+{
+	// Mausbewegung seit dem letzten Tick -> Stick-Auslenkung (-1..1, y: unten positiv)
+	const float scale = 12.0f;
+	const float smoothing = 0.5f;
+	const float anti_deadzone = 0.15f;
+	float rx = (float)mouse_acc_x * mouse_stick_sensitivity / scale;
+	float ry = (float)mouse_acc_y * mouse_stick_sensitivity / scale;
+	mouse_acc_x = mouse_acc_y = 0.0;
+	mouse_smooth_x = mouse_smooth_x * smoothing + rx * (1.0f - smoothing);
+	mouse_smooth_y = mouse_smooth_y * smoothing + ry * (1.0f - smoothing);
+	float mag = std::sqrt(mouse_smooth_x * mouse_smooth_x + mouse_smooth_y * mouse_smooth_y);
+	int16_t nx = 0, ny = 0;
+	if (mag > 1e-4f)
+	{
+		float out = anti_deadzone + (1.0f - anti_deadzone) * std::min(mag, 1.0f);
+		nx = (int16_t)std::lround(mouse_smooth_x / mag * out * 32767.0f);
+		ny = (int16_t)std::lround(mouse_smooth_y / mag * out * 32767.0f);
+	}
+	if (nx == mouse_out_x && ny == mouse_out_y)
+		return;
+	mouse_out_x = nx;
+	mouse_out_y = ny;
+	keyboard_state.right_x = nx;
+	keyboard_state.right_y = ny;
+	SendFeedbackState();
+}
+
+void StreamSession::HandleMouseLookButton(QMouseEvent *event, bool pressed)
+{
+	switch (event->button())
+	{
+		case Qt::LeftButton:
+			keyboard_state.r2_state = pressed ? 0xff : 0;
+			break;
+		case Qt::RightButton:
+			keyboard_state.l2_state = pressed ? 0xff : 0;
+			break;
+		case Qt::MiddleButton:
+			if (pressed) keyboard_state.buttons |= CHIAKI_CONTROLLER_BUTTON_R3;
+			else keyboard_state.buttons &= ~CHIAKI_CONTROLLER_BUTTON_R3;
+			break;
+		case Qt::BackButton:
+			if (pressed) keyboard_state.buttons |= CHIAKI_CONTROLLER_BUTTON_L1;
+			else keyboard_state.buttons &= ~CHIAKI_CONTROLLER_BUTTON_L1;
+			break;
+		case Qt::ForwardButton:
+			if (pressed) keyboard_state.buttons |= CHIAKI_CONTROLLER_BUTTON_R1;
+			else keyboard_state.buttons &= ~CHIAKI_CONTROLLER_BUTTON_R1;
+			break;
+		default:
+			return;
+	}
+	SendFeedbackState();
+}
+
 void StreamSession::HandleMousePressEvent(QMouseEvent *event)
 {
+	if(mouse_stick_enabled)
+	{
+		HandleMouseLookButton(event, true);
+		return;
+	}
 	if(!mouse_touch_enabled)
 		return;
 	// left button for touchpad gestures, others => touchpad click
@@ -910,6 +991,11 @@ void StreamSession::HandleMousePressEvent(QMouseEvent *event)
 
 void StreamSession::HandleMouseReleaseEvent(QMouseEvent *event)
 {
+	if(mouse_stick_enabled)
+	{
+		HandleMouseLookButton(event, false);
+		return;
+	}
 	if(!mouse_touch_enabled)
 		return;
 	// left button => end of touchpad gesture
@@ -927,7 +1013,7 @@ void StreamSession::HandleMouseReleaseEvent(QMouseEvent *event)
 
 void StreamSession::HandleMouseMoveEvent(QMouseEvent *event, qreal width, qreal height)
 {
-	if(!mouse_touch_enabled)
+	if(mouse_stick_enabled || !mouse_touch_enabled)
 		return;
 	// left button with move => touchpad gesture, otherwise ignore
 	if (event->buttons() == Qt::LeftButton)

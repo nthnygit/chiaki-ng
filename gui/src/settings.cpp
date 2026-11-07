@@ -996,6 +996,19 @@ void Settings::SetMouseTouchEnabled(bool enabled)
 	settings.setValue("settings/mouse_touch_enabled", enabled);
 }
 
+bool Settings::GetMouseStickEnabled() const
+{
+	return settings.value("settings/mouse_stick_enabled", false).toBool();
+}
+void Settings::SetMouseStickEnabled(bool enabled)
+{
+	settings.setValue("settings/mouse_stick_enabled", enabled);
+}
+float Settings::GetMouseStickSensitivity() const
+{
+	return settings.value("settings/mouse_stick_sensitivity", 1.0).toFloat();
+}
+
 
 bool Settings::GetDpadTouchEnabled() const
 {

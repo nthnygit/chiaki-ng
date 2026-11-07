@@ -809,6 +809,17 @@ void QmlSettings::setMouseTouchEnabled(bool enabled)
     emit mouseTouchEnabledChanged();
 }
 
+bool QmlSettings::mouseStickEnabled() const
+{
+    return settings->GetMouseStickEnabled();
+}
+
+void QmlSettings::setMouseStickEnabled(bool enabled)
+{
+    settings->SetMouseStickEnabled(enabled);
+    emit mouseStickEnabledChanged();
+}
+
 bool QmlSettings::keyboardEnabled() const
 {
     return settings->GetKeyboardEnabled();
@@ -1947,6 +1958,7 @@ void QmlSettings::refreshAllKeys()
     emit psnAuthTokenExpiryChanged();
     emit psnAccountIdChanged();
     emit mouseTouchEnabledChanged();
+    emit mouseStickEnabledChanged();
     emit keyboardEnabledChanged();
     emit dpadTouchEnabledChanged();
     emit iDROnFECFailureEnabledChanged();
