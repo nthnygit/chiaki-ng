@@ -113,6 +113,18 @@ jobs:
         run: |
           mkdir build
 
+      - name: Pre-download speexdsp (the plain-http xiph download fails on runners)
+        run: |
+          $dl = "${{ github.workspace }}\vcpkg-downloads"
+          New-Item -ItemType Directory -Force $dl | Out-Null
+          $f = "$dl\speexdsp-1.2.1.tar.gz"
+          $want = "41b5f37b48db5cb8c5a0f6437a4a8266d2627a5b7c1088de8549fe0bf0bb3105b7df8024fe207eef194096e0726ea73e2b53e0a4293d8db8e133baa0f8a3bad3"
+          foreach ($u in @("https://downloads.xiph.org/releases/speex/speexdsp-1.2.1.tar.gz", "https://ftp.osuosl.org/pub/xiph/releases/speex/speexdsp-1.2.1.tar.gz")) {
+            curl.exe -sSfL --retry 3 -o $f $u
+            if ($LASTEXITCODE -eq 0 -and (Get-FileHash $f -Algorithm SHA512).Hash -eq $want) { echo "speexdsp ok from $u"; break }
+          }
+          echo "VCPKG_DOWNLOADS=$dl" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
