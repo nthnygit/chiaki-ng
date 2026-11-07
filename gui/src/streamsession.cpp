@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-AGPL-3.0-only-OpenSSL
 
 #include <streamsession.h>
+#include <QKeySequence>
 #include <cmath>
 #include <algorithm>
 #include <settings.h>
@@ -680,6 +681,7 @@ StreamSession::StreamSession(const StreamSessionConnectInfo &connect_info, QObje
 	}
 #endif
 	key_map = connect_info.key_map;
+	BuildKeyHelp();
 	if (connect_info.enable_dualsense)
 	{
 		InitHaptics();
@@ -955,6 +957,44 @@ void StreamSession::MouseLookTick()
 	SendFeedbackState();
 }
 
+void StreamSession::BuildKeyHelp()
+{
+	// Tastenbelegung als Text fuer das Overlay (F1). Namen kommen aus der aktuellen Belegung.
+	auto key_for = [this](int button) -> QString {
+		for (auto it = key_map.cbegin(); it != key_map.cend(); ++it)
+			if (it.value() == button)
+				return QKeySequence(it.key()).toString();
+		return QStringLiteral("-");
+	};
+	auto ext = [](ControllerButtonExt b) { return static_cast<int>(b); };
+	QStringList l;
+	l << QStringLiteral("Move: %1 %2 %3 %4")
+			.arg(key_for(ext(ControllerButtonExt::ANALOG_STICK_LEFT_Y_UP)),
+				key_for(ext(ControllerButtonExt::ANALOG_STICK_LEFT_X_DOWN)),
+				key_for(ext(ControllerButtonExt::ANALOG_STICK_LEFT_Y_DOWN)),
+				key_for(ext(ControllerButtonExt::ANALOG_STICK_LEFT_X_UP)));
+	l << QStringLiteral("Camera: Mouse");
+	l << QStringLiteral("Jump / Climb: ") + key_for(CHIAKI_CONTROLLER_BUTTON_CROSS);
+	l << QStringLiteral("Dash: ") + key_for(CHIAKI_CONTROLLER_BUTTON_MOON);
+	l << QStringLiteral("Interact: ") + key_for(CHIAKI_CONTROLLER_BUTTON_PYRAMID) + QStringLiteral("   Chain Ultimate: Y");
+	l << QStringLiteral("Attack: Left click   Cancel climb: ") + key_for(CHIAKI_CONTROLLER_BUTTON_BOX);
+	l << QStringLiteral("Catch mode: Right click / ") + key_for(CHIAKI_CONTROLLER_ANALOG_BUTTON_L2)
+		+ QStringLiteral("   Twine / Catch: ") + key_for(CHIAKI_CONTROLLER_ANALOG_BUTTON_R2);
+	l << QStringLiteral("Skill 1: %1   Skill 2: %2")
+			.arg(key_for(CHIAKI_CONTROLLER_BUTTON_L1), key_for(CHIAKI_CONTROLLER_BUTTON_R1));
+	l << QStringLiteral("Ultimate: R   Ability: T");
+	l << QStringLiteral("Aniimo 1-4: %1 %2 %3 %4")
+			.arg(key_for(CHIAKI_CONTROLLER_BUTTON_DPAD_UP), key_for(CHIAKI_CONTROLLER_BUTTON_DPAD_RIGHT),
+				key_for(CHIAKI_CONTROLLER_BUTTON_DPAD_DOWN), key_for(CHIAKI_CONTROLLER_BUTTON_DPAD_LEFT));
+	l << QStringLiteral("Combat mode: J   Switch Aniipod: Ctrl");
+	l << QStringLiteral("Lock On: %1   Track: %2")
+			.arg(key_for(CHIAKI_CONTROLLER_BUTTON_R3), key_for(CHIAKI_CONTROLLER_BUTTON_L3));
+	l << QStringLiteral("Cursor mode: Alt / Middle click (Left click = confirm)");
+	l << QStringLiteral("Menu: %1   Confirm: Enter   Back: N").arg(key_for(CHIAKI_CONTROLLER_BUTTON_OPTIONS));
+	l << QStringLiteral("F1: show / hide this help");
+	key_help = l.join(QLatin1Char('\n'));
+}
+
 void StreamSession::ToggleCursorMode()
 {
 	if (cursor_toggle_busy)
@@ -1081,6 +1121,16 @@ void StreamSession::HandleMouseMoveEvent(QMouseEvent *event, qreal width, qreal 
 
 void StreamSession::HandleKeyboardEvent(QKeyEvent *event)
 {
+	// F1 blendet die Tastenbelegung als Overlay ein/aus (nur im Maus-Look-Modus)
+	if(mouse_stick_enabled && event->key() == Qt::Key_F1)
+	{
+		if(event->type() == QEvent::Type::KeyPress && !event->isAutoRepeat())
+		{
+			key_help_visible = !key_help_visible;
+			emit KeyHelpVisibleChanged();
+		}
+		return;
+	}
 	// Alt schaltet den Cursor-Modus um (wie Alt am PC), nur im Maus-Look-Modus
 	if(mouse_stick_enabled && event->key() == Qt::Key_Alt)
 	{

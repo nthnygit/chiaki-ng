@@ -243,6 +243,29 @@ Item {
         }
     }
 
+    // Tastenbelegung als Overlay (F1 ein/aus), zeigt Tastaturtasten statt PlayStation-Symbole
+    Rectangle {
+        id: keyHelpOverlay
+        z: 60
+        anchors.left: parent.left
+        anchors.leftMargin: 24
+        anchors.verticalCenter: parent.verticalCenter
+        width: keyHelpText.implicitWidth + 32
+        height: keyHelpText.implicitHeight + 28
+        radius: 8
+        color: "#000000"
+        opacity: 0.78
+        visible: Chiaki.session && Chiaki.session.keyHelpVisible
+        Text {
+            id: keyHelpText
+            anchors.centerIn: parent
+            text: Chiaki.session ? Chiaki.session.keyHelp : ""
+            color: "white"
+            font.pixelSize: 20
+            lineHeight: 1.25
+        }
+    }
+
     // Fadenkreuz in der Bildmitte (nur im Maus-Look-Modus, nicht im Cursor-Modus/Menue)
     Item {
         id: crosshair

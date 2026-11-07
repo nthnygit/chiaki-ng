@@ -7666,6 +7666,11 @@ bool QmlMainWindow::handleShortcut(QKeyEvent *event)
     if (!event->modifiers().testFlag(Qt::ControlModifier))
         return false;
 
+    // Im Maus-Look-Modus ist Strg eine Spieltaste (Aniipod wechseln): keine Strg-Kurzbefehle
+    // (Strg+Q wuerde sonst den Stream beenden, Strg+S/Z/M/O das Bild veraendern).
+    if (session && session->MouseStickEnabled())
+        return false;
+
     switch (event->key()) {
     case Qt::Key_S:
         if (has_video)
