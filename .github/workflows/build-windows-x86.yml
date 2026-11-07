@@ -99,12 +99,12 @@ jobs:
 
       - name: Setup shaderc
         run: |
-          $ProgressPreference = 'SilentlyContinue'
-          $url = ((Invoke-WebRequest -UseBasicParsing -Uri "https://storage.googleapis.com/shaderc/badges/build_link_windows_vs2019_release.html").Content | Select-String -Pattern 'url=(.*)"').Matches.Groups[1].Value
-          Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile .\shaderc.zip
-          Expand-Archive -LiteralPath "shaderc.zip" -DestinationPath "."
-          cp "./install/*" "./${{ env.dep_folder }}" -Force -Recurse
-          rm "./install" -r -force
+          # Google's prebuilt shaderc download is gone; the Vulkan SDK ships shaderc.
+          New-Item -ItemType Directory -Force -Path "./${{ env.dep_folder }}/include", "./${{ env.dep_folder }}/lib", "./${{ env.dep_folder }}/bin" | Out-Null
+          Get-ChildItem "${{ env.VULKAN_SDK }}" -Recurse -Filter "shaderc*" | Select-Object -First 20 FullName
+          Copy-Item "${{ env.VULKAN_SDK }}Include\shaderc" "./${{ env.dep_folder }}/include" -Recurse -Force
+          Copy-Item "${{ env.VULKAN_SDK }}Lib\shaderc_shared.lib" "./${{ env.dep_folder }}/lib" -Force
+          Copy-Item "${{ env.VULKAN_SDK }}Bin\shaderc_shared.dll" "./${{ env.dep_folder }}/bin" -Force
 
       - name: Make build directory
         run: |
