@@ -1102,6 +1102,8 @@ void StreamSession::HandleKeyboardEvent(QKeyEvent *event)
 			case Qt::Key_Y:      button = CHIAKI_CONTROLLER_BUTTON_PYRAMID; break; // Chain Ultimate (Dreieck)
 			case Qt::Key_T:      button = CHIAKI_CONTROLLER_BUTTON_BOX | CHIAKI_CONTROLLER_BUTTON_CROSS; break; // Ability/Mobility (Quadrat + Kreuz)
 			case Qt::Key_R:      button = CHIAKI_CONTROLLER_BUTTON_L1 | CHIAKI_CONTROLLER_BUTTON_R1;     break; // Ultimate (L1 + R1)
+			case Qt::Key_J:      button = CHIAKI_CONTROLLER_BUTTON_L1 | CHIAKI_CONTROLLER_BUTTON_BOX;    break; // Aniimo Combat Mode (L1 + Quadrat)
+			case Qt::Key_Control: button = CHIAKI_CONTROLLER_BUTTON_DPAD_RIGHT;                          break; // Switch Aniipod (D-Pad, naechster)
 			case Qt::Key_Return:
 			case Qt::Key_Enter:  button = CHIAKI_CONTROLLER_BUTTON_CROSS;   break; // Bestaetigen (Kreuz)
 			case Qt::Key_N:      button = CHIAKI_CONTROLLER_BUTTON_MOON;    break; // Pop-up schliessen (Kreis)
