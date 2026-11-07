@@ -266,6 +266,30 @@ Item {
         }
     }
 
+    // Anzeige "MENU MODE" oben rechts (F2)
+    Rectangle {
+        id: menuModeBadge
+        z: 60
+        anchors.right: parent.right
+        anchors.rightMargin: 24
+        anchors.top: parent.top
+        anchors.topMargin: 16
+        width: menuModeLabel.implicitWidth + 24
+        height: menuModeLabel.implicitHeight + 12
+        radius: 6
+        color: "#c0392b"
+        opacity: 0.9
+        visible: Chiaki.session && Chiaki.session.menuMode
+        Text {
+            id: menuModeLabel
+            anchors.centerIn: parent
+            text: qsTr("MENU MODE (F2)")
+            color: "white"
+            font.pixelSize: 18
+            font.bold: true
+        }
+    }
+
     // Fadenkreuz in der Bildmitte (nur im Maus-Look-Modus, nicht im Cursor-Modus/Menue)
     Item {
         id: crosshair
@@ -275,6 +299,7 @@ Item {
         z: 50
         visible: Chiaki.settings.mouseStickEnabled && Chiaki.settings.mouseCrosshairEnabled
                  && Chiaki.window.hasVideo && Chiaki.session && !Chiaki.session.cursorMode
+                 && !Chiaki.session.menuMode
                  && !sessionLoading && !sessionError
         // dunkler Rand fuer Sichtbarkeit auf hellem Hintergrund
         Rectangle { anchors.centerIn: parent; width: 28; height: 4; color: "black"; opacity: 0.6 }

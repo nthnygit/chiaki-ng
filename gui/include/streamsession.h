@@ -163,6 +163,7 @@ class StreamSession : public QObject
 	Q_PROPERTY(bool cursorMode READ GetCursorMode NOTIFY CursorModeChanged)
 	Q_PROPERTY(QString keyHelp READ GetKeyHelp CONSTANT)
 	Q_PROPERTY(bool keyHelpVisible READ GetKeyHelpVisible NOTIFY KeyHelpVisibleChanged)
+	Q_PROPERTY(bool menuMode READ GetMenuMode NOTIFY MenuModeChanged)
 	Q_PROPERTY(int framesLost READ GetFramesLost NOTIFY FramesLostChanged)
 
 	private:
@@ -246,7 +247,10 @@ class StreamSession : public QObject
 		bool cursor_mode = false;
 		bool cursor_toggle_busy = false;
 		bool cursor_want = false;
+		bool menu_mode = false;
 		void ApplyCursorMode();
+		void ToggleMenuMode();
+		void ResetMouseStick(bool was_left);
 		void MouseLookTick();
 		void HandleMouseLookButton(QMouseEvent *event, bool pressed);
 		bool dpad_regular;
@@ -379,6 +383,7 @@ class StreamSession : public QObject
 		bool GetCursorMode() const { return cursor_mode; }
 		QString GetKeyHelp() const { return key_help; }
 		bool GetKeyHelpVisible() const { return key_help_visible; }
+		bool GetMenuMode() const { return menu_mode; }
 		ChiakiErrorCode ConnectPsnConnection(QString duid, bool ps5);
 		void CancelPsnConnection(bool stop_thread);
 
@@ -426,6 +431,7 @@ class StreamSession : public QObject
 		void CantDisplayChanged(bool cant_display);
 		void CursorModeChanged();
 		void KeyHelpVisibleChanged();
+		void MenuModeChanged();
 		void FecFailure();
 
 	private slots:

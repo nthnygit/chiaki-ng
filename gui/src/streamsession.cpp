@@ -926,8 +926,10 @@ void StreamSession::MouseLookTick()
 	const float scale = 12.0f;
 	const float smoothing = 0.5f;
 	const float anti_deadzone = 0.15f;
-	float rx = (float)mouse_acc_x * mouse_stick_sensitivity / scale;
-	float ry = (float)mouse_acc_y * mouse_stick_sensitivity / scale;
+	// Menue/Cursor: doppelte Empfindlichkeit
+	const float sens = mouse_stick_sensitivity * ((menu_mode || cursor_mode) ? 2.0f : 1.0f);
+	float rx = (float)mouse_acc_x * sens / scale;
+	float ry = (float)mouse_acc_y * sens / scale;
 	mouse_acc_x = mouse_acc_y = 0.0;
 	mouse_smooth_x = mouse_smooth_x * smoothing + rx * (1.0f - smoothing);
 	mouse_smooth_y = mouse_smooth_y * smoothing + ry * (1.0f - smoothing);
@@ -943,8 +945,8 @@ void StreamSession::MouseLookTick()
 		return;
 	mouse_out_x = nx;
 	mouse_out_y = ny;
-	// Im Cursor-Modus (Menue) bewegt die Maus den Cursor = linker Stick, sonst die Kamera = rechter Stick
-	if (cursor_mode)
+	// Im Menue-/Cursor-Modus bewegt die Maus den Cursor = linker Stick, sonst die Kamera = rechter Stick
+	if (menu_mode || cursor_mode)
 	{
 		keyboard_state.left_x = nx;
 		keyboard_state.left_y = ny;
@@ -989,10 +991,40 @@ void StreamSession::BuildKeyHelp()
 	l << QStringLiteral("Combat mode: J   Switch Aniipod: Ctrl");
 	l << QStringLiteral("Lock On: %1   Track: %2")
 			.arg(key_for(CHIAKI_CONTROLLER_BUTTON_R3), key_for(CHIAKI_CONTROLLER_BUTTON_L3));
-	l << QStringLiteral("Cursor: hold Alt (Left click = Cross)");
+	l << QStringLiteral("F2: menu mode on/off (mouse = menu, Left click = Cross, Right = Back)");
+	l << QStringLiteral("In menu mode: hold Alt = game cursor");
 	l << QStringLiteral("Menu: %1   Confirm: Enter   Back: N").arg(key_for(CHIAKI_CONTROLLER_BUTTON_OPTIONS));
 	l << QStringLiteral("F1: show / hide this help");
 	key_help = l.join(QLatin1Char('\n'));
+}
+
+void StreamSession::ResetMouseStick(bool was_left)
+{
+	// Maus-Anteil auf dem bisherigen Stick loeschen und Glaettung zuruecksetzen
+	if (was_left)
+	{
+		keyboard_state.left_x = 0;
+		keyboard_state.left_y = 0;
+	}
+	else
+	{
+		keyboard_state.right_x = 0;
+		keyboard_state.right_y = 0;
+	}
+	mouse_out_x = mouse_out_y = 0;
+	mouse_smooth_x = mouse_smooth_y = 0.0f;
+	mouse_acc_x = mouse_acc_y = 0.0;
+}
+
+void StreamSession::ToggleMenuMode()
+{
+	const bool was_left = menu_mode || cursor_mode;
+	menu_mode = !menu_mode;
+	ResetMouseStick(was_left);
+	emit MenuModeChanged();
+	if (!menu_mode)
+		SetCursorModeWanted(false); // Menue-Modus aus: Cursor des Spiels ebenfalls weg
+	SendFeedbackState();
 }
 
 void StreamSession::SetCursorModeWanted(bool want)
@@ -1013,20 +1045,9 @@ void StreamSession::ApplyCursorMode()
 	SendFeedbackState();
 	// Nach kurzer Zeit hat das Spiel umgeschaltet: Maus-Zuordnung (Kamera <-> Cursor) wechseln
 	QTimer::singleShot(700, this, [this]() {
-		if (cursor_mode)
-		{
-			keyboard_state.left_x = 0;
-			keyboard_state.left_y = 0;
-		}
-		else
-		{
-			keyboard_state.right_x = 0;
-			keyboard_state.right_y = 0;
-		}
-		mouse_out_x = mouse_out_y = 0;
-		mouse_smooth_x = mouse_smooth_y = 0.0f;
-		mouse_acc_x = mouse_acc_y = 0.0;
+		const bool was_left = menu_mode || cursor_mode;
 		cursor_mode = !cursor_mode;
+		ResetMouseStick(was_left);
 		emit CursorModeChanged();
 		SendFeedbackState();
 	});
@@ -1044,8 +1065,8 @@ void StreamSession::HandleMouseLookButton(QMouseEvent *event, bool pressed)
 	{
 		case Qt::LeftButton:
 		{
-			// Normal: Angriff (Quadrat). Solange Alt gehalten ist (Cursor/Menue, auch PlayStation-Menue): Kreuz.
-			const int btn = (cursor_want || cursor_mode) ? CHIAKI_CONTROLLER_BUTTON_CROSS : CHIAKI_CONTROLLER_BUTTON_BOX;
+			// Normal: Angriff (Quadrat). Im Menue-Modus (F2, Spiel- und PlayStation-Menue): Kreuz.
+			const int btn = (menu_mode || cursor_want || cursor_mode) ? CHIAKI_CONTROLLER_BUTTON_CROSS : CHIAKI_CONTROLLER_BUTTON_BOX;
 			if (pressed)
 				keyboard_state.buttons |= btn;
 			else
@@ -1053,13 +1074,32 @@ void StreamSession::HandleMouseLookButton(QMouseEvent *event, bool pressed)
 			break;
 		}
 		case Qt::RightButton:
-			keyboard_state.l2_state = pressed ? 0xff : 0;
+			if (menu_mode)
+			{
+				// Menue-Modus: Zurueck (Kreis)
+				if (pressed) keyboard_state.buttons |= CHIAKI_CONTROLLER_BUTTON_MOON;
+				else keyboard_state.buttons &= ~CHIAKI_CONTROLLER_BUTTON_MOON;
+			}
+			else
+				keyboard_state.l2_state = pressed ? 0xff : 0;
+			if (!pressed)
+			{
+				keyboard_state.l2_state = 0;
+				keyboard_state.buttons &= ~CHIAKI_CONTROLLER_BUTTON_MOON;
+			}
 			break;
 		case Qt::MiddleButton:
-			// Mausrad-Klick schaltet den Cursor-Modus um (haelt R3 selbst lange gedrueckt)
-			if (pressed)
-				SetCursorModeWanted(!cursor_want);
-			return;
+			if (menu_mode)
+			{
+				// Menue-Modus: Mausrad-Klick schaltet den Cursor des Spiels um (haelt R3 selbst lange)
+				if (pressed)
+					SetCursorModeWanted(!cursor_want);
+				return;
+			}
+			// Spielwelt: Mausrad-Klick = R3 (Lock On)
+			if (pressed) keyboard_state.buttons |= CHIAKI_CONTROLLER_BUTTON_R3;
+			else keyboard_state.buttons &= ~CHIAKI_CONTROLLER_BUTTON_R3;
+			break;
 		case Qt::BackButton:
 			if (pressed) keyboard_state.buttons |= CHIAKI_CONTROLLER_BUTTON_L1;
 			else keyboard_state.buttons &= ~CHIAKI_CONTROLLER_BUTTON_L1;
@@ -1143,11 +1183,18 @@ void StreamSession::HandleKeyboardEvent(QKeyEvent *event)
 		}
 		return;
 	}
-	// Alt gedrueckt = Cursor sichtbar, Alt losgelassen = Cursor weg (wie am PC), nur im Maus-Look-Modus
+	// F2 schaltet den Menue-Modus (Spiel- und PlayStation-Menue) an/aus
+	if(mouse_stick_enabled && event->key() == Qt::Key_F2)
+	{
+		if(event->type() == QEvent::Type::KeyPress && !event->isAutoRepeat())
+			ToggleMenuMode();
+		return;
+	}
+	// Alt gedrueckt = Cursor sichtbar, Alt losgelassen = Cursor weg (wie am PC), nur im Menue-Modus
 	if(mouse_stick_enabled && event->key() == Qt::Key_Alt)
 	{
 		if(!event->isAutoRepeat())
-			SetCursorModeWanted(event->type() == QEvent::Type::KeyPress);
+			SetCursorModeWanted(menu_mode && event->type() == QEvent::Type::KeyPress);
 		return;
 	}
 	if(!keyboard_controller_enabled)
