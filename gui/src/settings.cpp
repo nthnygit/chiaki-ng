@@ -1004,6 +1004,14 @@ void Settings::SetMouseStickEnabled(bool enabled)
 {
 	settings.setValue("settings/mouse_stick_enabled", enabled);
 }
+bool Settings::GetMouseCrosshairEnabled() const
+{
+	return settings.value("settings/mouse_crosshair_enabled", true).toBool();
+}
+void Settings::SetMouseCrosshairEnabled(bool enabled)
+{
+	settings.setValue("settings/mouse_crosshair_enabled", enabled);
+}
 float Settings::GetMouseStickSensitivity() const
 {
 	return settings.value("settings/mouse_stick_sensitivity", 2.0).toFloat();

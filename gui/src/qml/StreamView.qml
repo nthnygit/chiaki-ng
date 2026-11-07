@@ -243,6 +243,24 @@ Item {
         }
     }
 
+    // Fadenkreuz in der Bildmitte (nur im Maus-Look-Modus, nicht im Cursor-Modus/Menue)
+    Item {
+        id: crosshair
+        anchors.centerIn: parent
+        width: 28
+        height: 28
+        z: 50
+        visible: Chiaki.settings.mouseStickEnabled && Chiaki.settings.mouseCrosshairEnabled
+                 && Chiaki.window.hasVideo && Chiaki.session && !Chiaki.session.cursorMode
+                 && !sessionLoading && !sessionError
+        // dunkler Rand fuer Sichtbarkeit auf hellem Hintergrund
+        Rectangle { anchors.centerIn: parent; width: 28; height: 4; color: "black"; opacity: 0.6 }
+        Rectangle { anchors.centerIn: parent; width: 4; height: 28; color: "black"; opacity: 0.6 }
+        Rectangle { anchors.centerIn: parent; width: 26; height: 2; color: "white" }
+        Rectangle { anchors.centerIn: parent; width: 2; height: 26; color: "white" }
+        Rectangle { anchors.centerIn: parent; width: 8; height: 8; radius: 4; color: "transparent" }
+    }
+
     ColumnLayout {
         id: cantDisplayMessage
         anchors.centerIn: parent

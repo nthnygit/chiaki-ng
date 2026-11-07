@@ -160,6 +160,7 @@ class StreamSession : public QObject
 	Q_PROPERTY(double averagePacketLoss READ GetAveragePacketLoss NOTIFY AveragePacketLossChanged)
 	Q_PROPERTY(bool muted READ GetMuted WRITE SetMuted NOTIFY MutedChanged)
 	Q_PROPERTY(bool cantDisplay READ GetCantDisplay NOTIFY CantDisplayChanged)
+	Q_PROPERTY(bool cursorMode READ GetCursorMode NOTIFY CursorModeChanged)
 	Q_PROPERTY(int framesLost READ GetFramesLost NOTIFY FramesLostChanged)
 
 	private:
@@ -237,6 +238,9 @@ class StreamSession : public QObject
 		float mouse_smooth_x = 0.0f, mouse_smooth_y = 0.0f;
 		int16_t mouse_out_x = 0, mouse_out_y = 0;
 		QTimer *mouse_look_timer = nullptr;
+		bool cursor_mode = false;
+		bool cursor_toggle_busy = false;
+		void ToggleCursorMode();
 		void MouseLookTick();
 		void HandleMouseLookButton(QMouseEvent *event, bool pressed);
 		bool dpad_regular;
@@ -366,6 +370,7 @@ class StreamSession : public QObject
 		void SetMuted(bool enable)	{ if (enable != muted) ToggleMute(); }
 		void SetAudioVolume(int volume) { audio_volume = volume; }
 		bool GetCantDisplay()	{ return cant_display; }
+		bool GetCursorMode() const { return cursor_mode; }
 		ChiakiErrorCode ConnectPsnConnection(QString duid, bool ps5);
 		void CancelPsnConnection(bool stop_thread);
 
@@ -410,6 +415,7 @@ class StreamSession : public QObject
 		void FramesLostChanged();
 		void MutedChanged();
 		void CantDisplayChanged(bool cant_display);
+		void CursorModeChanged();
 		void FecFailure();
 
 	private slots:

@@ -2353,6 +2353,13 @@ DialogView {
                             Layout.alignment: Qt.AlignRight
                             Material.roundedScale: Material.SmallScale
                         }
+                        CheckBox {
+                            text: qsTr("Show crosshair in screen center (mouse look)")
+                            checked: Chiaki.settings.mouseCrosshairEnabled
+                            onToggled: Chiaki.settings.mouseCrosshairEnabled = checked
+                            Layout.alignment: Qt.AlignRight
+                            Material.roundedScale: Material.SmallScale
+                        }
                         RowLayout {
                             Layout.columnSpan: 3
                             Layout.alignment: Qt.AlignRight

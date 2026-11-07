@@ -445,6 +445,8 @@ class Settings : public QObject
 
 		bool GetMouseStickEnabled() const;
 		void SetMouseStickEnabled(bool enabled);
+		bool GetMouseCrosshairEnabled() const;
+		void SetMouseCrosshairEnabled(bool enabled);
 		float GetMouseStickSensitivity() const;
 		void SetMouseStickSensitivity(float sensitivity);
 

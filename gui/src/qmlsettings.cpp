@@ -820,6 +820,17 @@ void QmlSettings::setMouseStickEnabled(bool enabled)
     emit mouseStickEnabledChanged();
 }
 
+bool QmlSettings::mouseCrosshairEnabled() const
+{
+    return settings->GetMouseCrosshairEnabled();
+}
+
+void QmlSettings::setMouseCrosshairEnabled(bool enabled)
+{
+    settings->SetMouseCrosshairEnabled(enabled);
+    emit mouseCrosshairEnabledChanged();
+}
+
 float QmlSettings::mouseStickSensitivity() const
 {
     return settings->GetMouseStickSensitivity();
@@ -1971,6 +1982,7 @@ void QmlSettings::refreshAllKeys()
     emit mouseTouchEnabledChanged();
     emit mouseStickEnabledChanged();
     emit mouseStickSensitivityChanged();
+    emit mouseCrosshairEnabledChanged();
     emit keyboardEnabledChanged();
     emit dpadTouchEnabledChanged();
     emit iDROnFECFailureEnabledChanged();

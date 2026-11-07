@@ -941,26 +941,73 @@ void StreamSession::MouseLookTick()
 		return;
 	mouse_out_x = nx;
 	mouse_out_y = ny;
-	keyboard_state.right_x = nx;
-	keyboard_state.right_y = ny;
+	// Im Cursor-Modus (Menue) bewegt die Maus den Cursor = linker Stick, sonst die Kamera = rechter Stick
+	if (cursor_mode)
+	{
+		keyboard_state.left_x = nx;
+		keyboard_state.left_y = ny;
+	}
+	else
+	{
+		keyboard_state.right_x = nx;
+		keyboard_state.right_y = ny;
+	}
 	SendFeedbackState();
+}
+
+void StreamSession::ToggleCursorMode()
+{
+	if (cursor_toggle_busy)
+		return;
+	// Maus-Anteil auf dem bisherigen Stick loeschen und Glaettung zuruecksetzen
+	if (cursor_mode)
+	{
+		keyboard_state.left_x = 0;
+		keyboard_state.left_y = 0;
+	}
+	else
+	{
+		keyboard_state.right_x = 0;
+		keyboard_state.right_y = 0;
+	}
+	mouse_out_x = mouse_out_y = 0;
+	mouse_smooth_x = mouse_smooth_y = 0.0f;
+	mouse_acc_x = mouse_acc_y = 0.0;
+	cursor_mode = !cursor_mode;
+	emit CursorModeChanged();
+	// Das Spiel schaltet den Cursor um, wenn R3 gehalten wird: R3 selbst lange halten
+	cursor_toggle_busy = true;
+	keyboard_state.buttons |= CHIAKI_CONTROLLER_BUTTON_R3;
+	SendFeedbackState();
+	QTimer::singleShot(1500, this, [this]() {
+		keyboard_state.buttons &= ~CHIAKI_CONTROLLER_BUTTON_R3;
+		cursor_toggle_busy = false;
+		SendFeedbackState();
+	});
 }
 
 void StreamSession::HandleMouseLookButton(QMouseEvent *event, bool pressed)
 {
 	switch (event->button())
 	{
-		case Qt::LeftButton: // Attack (Aniimo: Square / X)
-			if (pressed) keyboard_state.buttons |= CHIAKI_CONTROLLER_BUTTON_BOX;
-			else keyboard_state.buttons &= ~CHIAKI_CONTROLLER_BUTTON_BOX;
+		case Qt::LeftButton:
+		{
+			// Normal: Angriff (Quadrat). Im Cursor-Modus: Klick auf Menuepunkt (Kreuz).
+			const int btn = cursor_mode ? CHIAKI_CONTROLLER_BUTTON_CROSS : CHIAKI_CONTROLLER_BUTTON_BOX;
+			if (pressed)
+				keyboard_state.buttons |= btn;
+			else
+				keyboard_state.buttons &= ~(CHIAKI_CONTROLLER_BUTTON_CROSS | CHIAKI_CONTROLLER_BUTTON_BOX);
 			break;
+		}
 		case Qt::RightButton:
 			keyboard_state.l2_state = pressed ? 0xff : 0;
 			break;
 		case Qt::MiddleButton:
-			if (pressed) keyboard_state.buttons |= CHIAKI_CONTROLLER_BUTTON_R3;
-			else keyboard_state.buttons &= ~CHIAKI_CONTROLLER_BUTTON_R3;
-			break;
+			// Mausrad-Klick schaltet den Cursor-Modus um (haelt R3 selbst lange gedrueckt)
+			if (pressed)
+				ToggleCursorMode();
+			return;
 		case Qt::BackButton:
 			if (pressed) keyboard_state.buttons |= CHIAKI_CONTROLLER_BUTTON_L1;
 			else keyboard_state.buttons &= ~CHIAKI_CONTROLLER_BUTTON_L1;
@@ -1034,6 +1081,13 @@ void StreamSession::HandleMouseMoveEvent(QMouseEvent *event, qreal width, qreal 
 
 void StreamSession::HandleKeyboardEvent(QKeyEvent *event)
 {
+	// Alt schaltet den Cursor-Modus um (wie Alt am PC), nur im Maus-Look-Modus
+	if(mouse_stick_enabled && event->key() == Qt::Key_Alt)
+	{
+		if(event->type() == QEvent::Type::KeyPress && !event->isAutoRepeat())
+			ToggleCursorMode();
+		return;
+	}
 	if(!keyboard_controller_enabled)
 		return;
 	if(key_map.contains(Qt::Key(event->key())) == false)

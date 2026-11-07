@@ -82,6 +82,7 @@ class QmlSettings : public QObject
     Q_PROPERTY(QString psnAccountId READ psnAccountId WRITE setPsnAccountId NOTIFY psnAccountIdChanged)
     Q_PROPERTY(bool mouseTouchEnabled READ mouseTouchEnabled WRITE setMouseTouchEnabled NOTIFY mouseTouchEnabledChanged)
     Q_PROPERTY(bool mouseStickEnabled READ mouseStickEnabled WRITE setMouseStickEnabled NOTIFY mouseStickEnabledChanged)
+    Q_PROPERTY(bool mouseCrosshairEnabled READ mouseCrosshairEnabled WRITE setMouseCrosshairEnabled NOTIFY mouseCrosshairEnabledChanged)
     Q_PROPERTY(float mouseStickSensitivity READ mouseStickSensitivity WRITE setMouseStickSensitivity NOTIFY mouseStickSensitivityChanged)
     Q_PROPERTY(bool keyboardEnabled READ keyboardEnabled WRITE setKeyboardEnabled NOTIFY keyboardEnabledChanged)
     Q_PROPERTY(bool dpadTouchEnabled READ dpadTouchEnabled WRITE setDpadTouchEnabled NOTIFY dpadTouchEnabledChanged)
@@ -550,6 +551,8 @@ public:
     void setMouseTouchEnabled(bool enabled);
     bool mouseStickEnabled() const;
     void setMouseStickEnabled(bool enabled);
+    bool mouseCrosshairEnabled() const;
+    void setMouseCrosshairEnabled(bool enabled);
     float mouseStickSensitivity() const;
     void setMouseStickSensitivity(float sensitivity);
 
@@ -688,6 +691,7 @@ signals:
     void psnAccountIdChanged();
     void mouseTouchEnabledChanged();
     void mouseStickEnabledChanged();
+    void mouseCrosshairEnabledChanged();
     void mouseStickSensitivityChanged();
     void keyboardEnabledChanged();
     void dpadTouchEnabledChanged();
